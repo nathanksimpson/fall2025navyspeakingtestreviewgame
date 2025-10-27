@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Navy Speaking Test Review Game Fall 2025</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body {
+        height: 100%;
+        margin: 0;
+    }
+    body { font-family: 'Inter', sans-serif; background-color: #f0f9ff; }
+    .font-fredoka { font-family: 'Fredoka One', cursive; }
+
+    .game-active-body {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; 
+    }
+
+    .game-board { 
+        display: grid; 
+        grid-template-columns: repeat(8, 1fr); 
+        grid-template-rows: repeat(4, 1fr); 
+        gap: 1vmin; 
+        max-width: 100%;
+        max-height: 100%;
+        aspect-ratio: 2 / 1; 
+    }
+    
+    .game-board-space-content {
+        font-size: 2vmin;
+        line-height: 1.2;
+    }
+    .game-board-space-number {
+        font-size: 1.5vmin;
+    }
+
+
+    .space-1 { grid-area: 4 / 1; } .space-2 { grid-area: 4 / 2; } .space-3 { grid-area: 4 / 3; } .space-4 { grid-area: 4 / 4; }
+    .space-5 { grid-area: 4 / 5; } .space-6 { grid-area: 4 / 6; } .space-7 { grid-area: 4 / 7; } .space-8 { grid-area: 4 / 8; }
+    .space-9 { grid-area: 3 / 8; } .space-10 { grid-area: 3 / 7; } .space-11 { grid-area: 3 / 6; } .space-12 { grid-area: 3 / 5; }
+    .space-13 { grid-area: 3 / 4; } .space-14 { grid-area: 3 / 3; } .space-15 { grid-area: 3 / 2; } .space-16 { grid-area: 3 / 1; }
+    .space-17 { grid-area: 2 / 1; } .space-18 { grid-area: 2 / 2; } .space-19 { grid-area: 2 / 3; } .space-20 { grid-area: 2 / 4; }
+    .space-21 { grid-area: 2 / 5; } .space-22 { grid-area: 2 / 6; } .space-23 { grid-area: 2 / 7; } .space-24 { grid-area: 2 / 8; }
+    .space-25 { grid-area: 1 / 8; } .space-26 { grid-area: 1 / 7; } .space-27 { grid-area: 1 / 6; } .space-28 { grid-area: 1 / 5; }
+    .space-29 { grid-area: 1 / 4; } .space-30 { grid-area: 1 / 3; } .space-31 { grid-area: 1 / 2; } .space-32 { grid-area: 1 / 1; }
+    
+    .piece-slot { position: relative; width: 100%; height: 100%; }
+    .player-piece { 
+        transition: transform 0.3s ease-in-out, top 0.3s ease-in-out, left 0.3s ease-in-out; 
+        width: 30%; 
+        height: 30%; 
+        border-radius: 50%; 
+        position: absolute; 
+        z-index: 10; 
+        border: 2px solid white; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+    }
+    .player-piece[draggable="true"] { cursor: grab; }
+    .player-piece[draggable="true"]:active { cursor: grabbing; }
+
+    .modal-hidden { opacity: 0; visibility: hidden; transform: scale(0.95); transition: all 0.2s ease-in-out; }
+    .modal-visible { opacity: 1; visibility: visible; transform: scale(1); transition: all 0.2s ease-in-out; }
+    
+    .draggable-item { cursor: grab; }
+    .draggable-item:active { cursor: grabbing; background-color: #e0e7ff; }
+    
+    .dragging { opacity: 0.5; z-index: 1000; }
+    .drag-over { border: 2px dashed #3b82f6; background-color: #dbeafe; transform: scale(1.05); }
+  </style>
+</head>
+<body class="text-gray-800">
+
+  <!-- Admin / Initialization Page -->
+  <div id="admin-page" class="max-w-4xl mx-auto p-4 md:p-8">
+    <header class="flex justify-between items-center mb-6">
+        <div class="text-left">
+            <h1 class="text-4xl md:text-6xl font-fredoka text-blue-600">Navy Speaking Test Review Game Fall 2025</h1>
+            <p class="text-lg text-gray-600">Customize your adventure!</p>
+        </div>
+        <div class="flex items-center gap-4 flex-shrink-0">
+             <button id="how-to-btn-admin" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg shadow-md">Need help?</button>
+             <button id="reset-board-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg shadow-md">Reset to Default</button>
+             <button id="start-game-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md">Start Game</button>
+        </div>
+    </header>
+
+    <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+      <h2 class="text-2xl font-bold mb-4">Game Settings</h2>
+      <div class="mb-4">
+        <label for="player-count" class="block text-lg font-medium text-gray-700">Number of Players/Teams:</label>
+        <select id="player-count" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+          <option>2</option>
+          <option>3</option>
+          <option>4</option>
+        </select>
+      </div>
+       <div id="player-settings" class="mt-6 space-y-4">
+          <!-- Player name and color inputs will be generated here -->
+       </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+      <h2 class="text-2xl font-bold mb-4">Board Editor</h2>
+      <p class="text-sm text-gray-500 mb-4">Drag and drop to reorder spaces. Edit text and add image URLs for questions.</p>
+      <ul id="board-editor-list" class="space-y-3"></ul>
+      <button id="add-space-btn" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-md">Add New Space</button>
+    </div>
+  </div>
+
+  <!-- Game Page -->
+  <div id="game-page" class="hidden flex flex-col h-full p-4 md:p-8">
+    <header class="flex justify-between items-center mb-6">
+        <div class="text-left">
+            <h1 class="text-4xl md:text-6xl font-fredoka text-blue-600">Speaking Quest</h1>
+            <p class="text-lg text-gray-600">Navy Test Review</p>
+        </div>
+        <button id="how-to-btn-game" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg shadow-md flex-shrink-0">Need help?</button>
+    </header>
+
+    <div class="bg-white p-4 rounded-xl shadow-lg mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div id="turn-indicator" class="text-xl font-bold p-3 rounded-lg"></div>
+      <div class="flex items-center gap-4 flex-wrap justify-center">
+        <span class="text-lg">Dice:</span>
+        <div id="dice-display" class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-4xl font-bold shadow-inner">?</div>
+        <button id="roll-dice-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">Roll Dice</button>
+        <button id="next-turn-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg shadow-md" disabled>Next Turn</button>
+      </div>
+      <div class="flex items-center gap-4">
+        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+          <input id="manual-mode" type="checkbox" class="rounded" />
+          <span>Manual Move</span>
+        </label>
+        <button id="back-to-setup-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md">Back to Setup</button>
+      </div>
+    </div>
+    <div id="game-board-container" class="relative bg-white p-4 rounded-xl shadow-lg flex-grow flex items-center justify-center">
+        <div class="game-board"></div>
+    </div>
+  </div>
+
+  <!-- Question Modal -->
+    <div id="question-modal" class="modal-hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center transform">
+            <div id="modal-graphic" class="text-6xl mb-4"></div>
+            <img id="modal-image" src="" alt="Question Image" class="hidden max-h-40 mx-auto mb-4 rounded-lg" onerror="this.style.display='none'">
+            <div class="flex justify-center items-center gap-2 mb-4">
+                <h2 id="modal-title" class="text-2xl font-bold"></h2>
+                <button id="speak-question-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 w-6 h-6"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                </button>
+            </div>
+            <p id="modal-question" class="text-lg mb-6"></p>
+            <div class="flex justify-center gap-4 mt-6">
+                <button id="close-modal-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md">Continue</button>
+                <button id="correct-btn" class="hidden bg-green-500 hover:bg-green-600 text-white font-bold w-16 h-16 rounded-full text-2xl flex items-center justify-center shadow-lg">O</button>
+                <button id="incorrect-btn" class="hidden bg-red-500 hover:bg-red-600 text-white font-bold w-16 h-16 rounded-full text-2xl flex items-center justify-center shadow-lg">X</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- How To Use Modal -->
+    <div id="how-to-modal" class="modal-hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full transform">
+            <h2 class="text-3xl font-bold mb-4 font-fredoka text-indigo-600 text-center">How to Use</h2>
+            <div class="text-left max-h-[60vh] overflow-y-auto space-y-4 pr-2">
+                <div>
+                    <h3 class="font-bold text-lg text-indigo-800">Game Setup</h3>
+                    <p>On the first screen, you can customize the game. You can select the number of players, change their names, and pick their colors. You can also edit the game board by dragging questions to reorder them, changing their text, or even adding new spaces.</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-indigo-800">Gameplay</h3>
+                    <p>Click <strong class="text-green-600">"Roll Dice"</strong> to move the current player. After the player moves, a question or action will pop up. When the turn is over, click the <strong class="text-indigo-600">"Next Turn"</strong> button to proceed to the next player.</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-indigo-800">Answering Questions</h3>
+                     <p>When a question space is landed on, the question will be read aloud automatically. The question text itself will be hidden.</p>
+                     <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                        <li>To see the question text, click on the box that says <strong class="text-gray-600">"Click to reveal the question..."</strong>.</li>
+                        <li>To hear the question again, click the speaker button <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block align-middle text-blue-500"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>.</li>
+                        <li>If the player answers correctly, click the <strong class="text-green-600">"O"</strong> button. The player will stay on the new square.</li>
+                        <li>If the player answers incorrectly, click the <strong class="text-red-600">"X"</strong> button. The player will be moved back to their original square.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-indigo-800">Manual Move Mode</h3>
+                    <p>Check the <strong class="text-gray-800">"Manual Move"</strong> box to gain full control. In this mode, you can freely drag and drop any player's piece to any square on the board. This is useful for setting up scenarios or making corrections. Dice rolling is still available in this mode if you want to use it.</p>
+                </div>
+            </div>
+            <div class="text-center mt-6">
+                <button id="close-how-to-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-md">Got It!</button>
+            </div>
+        </div>
+    </div>
+
+
+  <script>
+    // --- DOM ELEMENTS ---
+    const adminPage = document.getElementById('admin-page');
+    const gamePage = document.getElementById('game-page');
+    const playerCountSelect = document.getElementById('player-count');
+    const playerSettingsDiv = document.getElementById('player-settings');
+    const boardEditorList = document.getElementById('board-editor-list');
+    const addSpaceBtn = document.getElementById('add-space-btn');
+    const resetBoardBtn = document.getElementById('reset-board-btn');
+    const startGameBtn = document.getElementById('start-game-btn');
+    const backToSetupBtn = document.getElementById('back-to-setup-btn');
+    const manualModeCheckbox = document.getElementById('manual-mode');
+
+    const board = gamePage.querySelector('.game-board');
+    const boardContainer = document.getElementById('game-board-container');
+    const rollDiceBtn = document.getElementById('roll-dice-btn');
+    const diceDisplay = document.getElementById('dice-display');
+    const turnIndicator = document.getElementById('turn-indicator');
+    const nextTurnBtn = document.getElementById('next-turn-btn');
+    
+    const modal = document.getElementById('question-modal');
+    const modalGraphic = document.getElementById('modal-graphic');
+    const modalImage = document.getElementById('modal-image');
+    const modalTitle = document.getElementById('modal-title');
+    const modalQuestion = document.getElementById('modal-question');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const speakQuestionBtn = document.getElementById('speak-question-btn');
+    const correctBtn = document.getElementById('correct-btn');
+    const incorrectBtn = document.getElementById('incorrect-btn');
+
+    const howToBtnAdmin = document.getElementById('how-to-btn-admin');
+    const howToBtnGame = document.getElementById('how-to-btn-game');
+    const howToModal = document.getElementById('how-to-modal');
+    const closeHowToBtn = document.getElementById('close-how-to-btn');
+
+    // --- GAME DATA & CONFIG ---
+    const defaultGameData = [
+        { type: 'start', text: 'START', graphic: '🏠' },
+        { type: 'question', text: 'What is your name?', graphic: '👤', imageUrl: '' },
+        { type: 'question', text: 'How old are you?', graphic: '🎂', imageUrl: '' },
+        { type: 'question', text: 'What day is it today?', graphic: '📅', imageUrl: '' },
+        { type: 'question', text: 'What is your favorite subject?', graphic: '📚', imageUrl: '' },
+        { type: 'question', text: 'How is the cupcake?', graphic: '🧁', imageUrl: '' },
+        { type: 'question', text: 'What time do you wake up?', graphic: '⏰', imageUrl: '' },
+        { type: 'question', text: 'How are fish and humans different?', graphic: '🐟', imageUrl: '' },
+        { type: 'question', text: 'How is the pizza?', graphic: '🍕', imageUrl: '' },
+        { type: 'question', text: 'What is the lemonade like?', graphic: '🍋', imageUrl: '' },
+        { type: 'question', text: 'What do you do after school?', graphic: '🎒', imageUrl: '' },
+        { type: 'question', text: 'What time do you eat breakfast?', graphic: '🥞', imageUrl: '' },
+        { type: 'question', text: 'How are birds and humans different?', graphic: '🐦', imageUrl: '' },
+        { type: 'question', text: 'Where do fish live?', graphic: '🌊', imageUrl: '' },
+        { type: 'question', text: 'What is your favorite food?', graphic: '🍲', imageUrl: '' },
+        { type: 'question', text: 'How does it taste?', graphic: '😋', imageUrl: '' },
+        { type: 'question', text: 'What time do you go to sleep?', graphic: '🌙', imageUrl: '' },
+        { type: 'question', text: 'What do you do in the morning?', graphic: '☀️', imageUrl: '' },
+        { type: 'question', text: 'What can both fish and humans do?', graphic: '🏊', imageUrl: '' },
+        { type: 'question', text: 'What food do you think is spicy?', graphic: '🌶️', imageUrl: '' },
+        { type: 'question', text: 'What food do you think is sweet?', graphic: '🍭', imageUrl: '' },
+        { type: 'question', text: 'What is your favorite drink?', graphic: '🥤', imageUrl: '' },
+        { type: 'question', text: 'What do you do in the evening?', graphic: '🌆', imageUrl: '' },
+        { type: 'question', text: 'What time do you come home?', graphic: '🏡', imageUrl: '' },
+        { type: 'question', text: 'What do you do before bed?', graphic: '📖', imageUrl: '' },
+        { type: 'question', text: 'How do you go to school?', graphic: '🚌', imageUrl: '' },
+        { type: 'question', text: 'What can humans do that fish cannot?', graphic: '🚶', imageUrl: '' },
+        { type: 'question', text: 'What do both birds and humans have?', graphic: '👀', imageUrl: '' },
+        { type: 'special', text: 'Shortcut! Jump to space 31!', graphic: '🚀', action: 'jump', value: 30 },
+        { type: 'question', text: 'Where do humans live?', graphic: '🌍', imageUrl: '' },
+        { type: 'question', text: 'Why do you think animals are amazing?', graphic: '🐅', imageUrl: '' },
+        { type: 'finish', text: 'FINISH!', graphic: '🎉', imageUrl: '' }
+    ];
+
+    const defaultPlayers = [
+        { name: 'Player 1', color: '#3b82f6' },
+        { name: 'Player 2', color: '#ef4444' },
+        { name: 'Player 3', color: '#10b981' },
+        { name: 'Player 4', color: '#f59e0b' }
+    ];
+
+    let gameConfig = {
+        playerCount: 2,
+        boardData: [],
+        players: JSON.parse(JSON.stringify(defaultPlayers))
+    };
+    
+    // --- GAME STATE ---
+    let playerPositions = [];
+    let currentPlayer = 1;
+    let gameActive = true;
+    let currentGameBoardData = [];
+    let currentQuestionText = '';
+   
+    // --- ADMIN PAGE LOGIC ---
+    function saveConfig() {
+        localStorage.setItem('speakingQuestConfig', JSON.stringify(gameConfig));
+    }
+
+    function speakText(text) {
+        if ('speechSynthesis' in window) {
+            // Stop any previous speech before starting a new one
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; // Explicitly set language
+            window.speechSynthesis.speak(utterance);
+        } else {
+            console.warn('Text-to-speech not supported in this browser.');
+            // Optionally, disable the speak button if not supported
+            if(speakQuestionBtn) speakQuestionBtn.style.display = 'none';
+        }
+    }
+
+    function loadConfig() {
+        const savedConfig = localStorage.getItem('speakingQuestConfig');
+        if (savedConfig) {
+            gameConfig = JSON.parse(savedConfig);
+            if (!gameConfig.players || gameConfig.players.length < 4) {
+                gameConfig.players = JSON.parse(JSON.stringify(defaultPlayers));
+            }
+        } else {
+            gameConfig.boardData = JSON.parse(JSON.stringify(defaultGameData));
+        }
+        playerCountSelect.value = gameConfig.playerCount;
+        renderPlayerEditor();
+    }
+    
+    function renderPlayerEditor() {
+        playerSettingsDiv.innerHTML = '';
+        const count = parseInt(playerCountSelect.value, 10);
+        for(let i=0; i < count; i++) {
+            const player = gameConfig.players[i];
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-4';
+            div.innerHTML = `
+                <label class="font-medium text-gray-700 w-24">Player ${i + 1}:</label>
+                <input type="text" value="${player.name}" data-player-index="${i}" class="player-name-input flex-grow p-2 rounded border-gray-300" placeholder="Enter name">
+                <input type="color" value="${player.color}" data-player-index="${i}" class="player-color-input h-10 w-10 p-1 rounded">
+            `;
+            playerSettingsDiv.appendChild(div);
+        }
+        
+        document.querySelectorAll('.player-name-input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const index = e.target.dataset.playerIndex;
+                gameConfig.players[index].name = e.target.value;
+                saveConfig();
+            });
+        });
+
+        document.querySelectorAll('.player-color-input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const index = e.target.dataset.playerIndex;
+                gameConfig.players[index].color = e.target.value;
+                saveConfig();
+            });
+        });
+    }
+
+    function renderAdminEditor() {
+        boardEditorList.innerHTML = '';
+        gameConfig.boardData.forEach((space, index) => {
+            const li = document.createElement('li');
+            li.className = 'p-3 bg-gray-100 rounded-lg flex items-center gap-3 draggable-item';
+            li.draggable = true;
+            li.dataset.index = index;
+
+            li.innerHTML = `
+                <span class="cursor-move text-gray-400">☰</span>
+                <span class="font-bold">${index + 1}.</span>
+                <select class="space-type-select w-32 p-1 rounded border-gray-300">
+                    <option value="question" ${space.type === 'question' ? 'selected' : ''}>Question</option>
+                    <option value="special" ${space.type === 'special' ? 'selected' : ''}>Special</option>
+                    <option value="start" ${space.type === 'start' ? 'selected' : ''}>Start</option>
+                    <option value="finish" ${space.type === 'finish' ? 'selected' : ''}>Finish</option>
+                </select>
+                <input type="text" value="${space.text}" class="space-text-input flex-grow p-1 rounded border-gray-300" placeholder="Question or Action Text">
+                <input type="text" value="${space.graphic || ''}" class="space-graphic-input w-16 p-1 rounded border-gray-300" placeholder="Icon">
+                <input type="text" value="${space.imageUrl || ''}" class="space-image-input flex-grow p-1 rounded border-gray-300" placeholder="Image URL (optional)">
+                <button class="remove-space-btn bg-red-500 text-white rounded px-2 py-1 text-xs">X</button>
+            `;
+            boardEditorList.appendChild(li);
+        });
+        addEditorEventListeners();
+    }
+
+    function addEditorEventListeners() {
+        document.querySelectorAll('.space-type-select, .space-text-input, .space-graphic-input, .space-image-input').forEach(input => {
+            input.addEventListener('change', updateBoardDataFromUI);
+        });
+        document.querySelectorAll('.remove-space-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.target.closest('li').dataset.index, 10);
+                gameConfig.boardData.splice(index, 1);
+                renderAdminEditor();
+                saveConfig();
+            });
+        });
+        
+        let draggedItem = null;
+        boardEditorList.addEventListener('dragstart', (e) => {
+            draggedItem = e.target;
+            setTimeout(() => e.target.classList.add('dragging'), 0);
+        });
+        boardEditorList.addEventListener('dragend', (e) => {
+            if (draggedItem) draggedItem.classList.remove('dragging');
+            draggedItem = null;
+            updateBoardDataFromUI();
+        });
+        boardEditorList.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(boardEditorList, e.clientY);
+            if (afterElement == null) {
+                boardEditorList.appendChild(draggedItem);
+            } else {
+                boardEditorList.insertBefore(draggedItem, afterElement);
+            }
+        });
+    }
+    
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.draggable-item:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function updateBoardDataFromUI() {
+        const newBoardData = [];
+        document.querySelectorAll('#board-editor-list li').forEach((li) => {
+            const type = li.querySelector('.space-type-select').value;
+            const text = li.querySelector('.space-text-input').value;
+            const graphic = li.querySelector('.space-graphic-input').value;
+            const imageUrl = li.querySelector('.space-image-input').value;
+            
+            let space = { type, text, graphic, imageUrl };
+            const oldIndex = parseInt(li.dataset.index, 10);
+            const oldSpace = gameConfig.boardData[oldIndex];
+            
+            if (oldSpace && oldSpace.type === 'special' && type === 'special') {
+                space.action = oldSpace.action;
+                space.value = oldSpace.value;
+            }
+            newBoardData.push(space);
+        });
+        gameConfig.boardData = newBoardData;
+        saveConfig();
+        renderAdminEditor();
+    }
+
+    // --- GAME LOGIC ---
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function initializeGame() {
+        const startSpace = gameConfig.boardData[0];
+        const finishSpace = gameConfig.boardData[gameConfig.boardData.length - 1];
+        let middleSpaces = gameConfig.boardData.slice(1, -1);
+
+        // Find and remove the jump space from the middle spaces
+        const jumpSpaceIndex = middleSpaces.findIndex(s => s.action === 'jump' && s.value === 30);
+        let jumpSpace = null;
+        if (jumpSpaceIndex > -1) {
+            jumpSpace = middleSpaces.splice(jumpSpaceIndex, 1)[0];
+        }
+
+        // Shuffle the rest of the middle spaces
+        shuffleArray(middleSpaces);
+
+        // If the jump space exists, insert it into a random position between board spaces 27-29 (array indices 25-27)
+        if (jumpSpace) {
+            const possibleIndices = [25, 26, 27];
+            const maxIndex = middleSpaces.length;
+            const validIndices = possibleIndices.filter(i => i <= maxIndex);
+            
+            let insertionIndex;
+            if(validIndices.length > 0) {
+                 insertionIndex = validIndices[Math.floor(Math.random() * validIndices.length)];
+            } else {
+                // Fallback: just put it at the end if the board is very short
+                insertionIndex = maxIndex;
+            }
+            
+            middleSpaces.splice(insertionIndex, 0, jumpSpace);
+        }
+
+        currentGameBoardData = [startSpace, ...middleSpaces, finishSpace];
+
+        board.innerHTML = '';
+        currentGameBoardData.forEach((space, index) => {
+            const spaceEl = document.createElement('div');
+            spaceEl.id = `space-${index}`;
+            spaceEl.className = `space-${index+1} relative rounded-lg flex items-center justify-center p-1 text-center font-bold shadow-md`;
+            
+            let bgColor = 'bg-white';
+            if (space.type === 'start') bgColor = 'bg-green-300';
+            else if (space.type === 'finish') bgColor = 'bg-yellow-300';
+            else if (space.type === 'special') bgColor = 'bg-purple-300';
+            else if (index % 2 === 0) bgColor = 'bg-blue-200';
+            else bgColor = 'bg-sky-200';
+            
+            spaceEl.classList.add(bgColor);
+            spaceEl.innerHTML = `
+                <span class="absolute top-1 left-2 font-black text-gray-600 game-board-space-number">${index + 1}</span>
+                <span class="text-gray-700 game-board-space-content">${space.graphic} ${space.type !== 'question' ? space.text : ''}</span>
+                <div class="piece-slot"></div>`;
+            board.appendChild(spaceEl);
+        });
+
+        document.querySelectorAll('.player-piece').forEach(p => p.remove());
+        playerPositions = Array(gameConfig.playerCount).fill(0);
+        for (let i = 0; i < gameConfig.playerCount; i++) {
+            const piece = document.createElement('div');
+            piece.id = `player-piece-${i+1}`;
+            piece.dataset.playerNum = i + 1;
+            piece.className = `player-piece player-${i+1}`;
+            piece.style.backgroundColor = gameConfig.players[i].color;
+            board.appendChild(piece);
+        }
+        
+        resetGame();
+    }
+
+    function resetGame() {
+        playerPositions.fill(0);
+        currentPlayer = 1;
+        gameActive = true;
+        diceDisplay.textContent = '?';
+        manualModeCheckbox.checked = false;
+        
+        updateGameControls();
+        updateDraggablePieces();
+        updateTurnIndicator();
+        renderPlayerPieces();
+    }
+
+    function updateGameControls() {
+        rollDiceBtn.disabled = false;
+        nextTurnBtn.disabled = false; 
+    }
+    
+    function repositionPiecesInSlot(spaceIndex) {
+        const slot = document.querySelector(`#space-${spaceIndex} .piece-slot`);
+        if (!slot) return;
+
+        const piecesOnSlot = [];
+        playerPositions.forEach((pos, playerIndex) => {
+            if (pos === spaceIndex) {
+                piecesOnSlot.push(document.getElementById(`player-piece-${playerIndex + 1}`));
+            }
+        });
+
+        const offsets = [
+            { top: '15%', left: '15%' }, { top: '15%', left: '55%' },
+            { top: '55%', left: '15%' }, { top: '55%', left: '55%' },
+        ];
+
+        piecesOnSlot.forEach((piece, index) => {
+            if (piece) {
+                const offset = offsets[index % 4];
+                piece.style.top = offset.top;
+                piece.style.left = offset.left;
+            }
+        });
+    }
+
+    function renderPlayerPieces() {
+        for (let i = 0; i < gameConfig.playerCount; i++) {
+            const playerNum = i + 1;
+            const piece = document.getElementById(`player-piece-${playerNum}`);
+            if (!piece) continue;
+
+            piece.style.display = 'block';
+            const spaceIndex = playerPositions[i];
+            const spaceEl = document.getElementById(`space-${spaceIndex}`);
+            if (spaceEl) {
+                const slot = spaceEl.querySelector('.piece-slot');
+                if (slot) slot.appendChild(piece);
+            }
+        }
+
+        document.querySelectorAll('.player-piece').forEach(piece => {
+            if (parseInt(piece.dataset.playerNum, 10) > gameConfig.playerCount) {
+                piece.style.display = 'none';
+            }
+        });
+
+        const uniquePositions = [...new Set(playerPositions)];
+        uniquePositions.forEach(pos => repositionPiecesInSlot(pos));
+    }
+
+
+    function updateTurnIndicator() {
+        const player = gameConfig.players[currentPlayer - 1];
+        turnIndicator.textContent = `${player.name}'s Turn`;
+        turnIndicator.style.backgroundColor = player.color + '33';
+        turnIndicator.style.color = player.color;
+    }
+    
+    async function handleRollDice() {
+        if (!gameActive) return;
+        rollDiceBtn.disabled = true;
+        nextTurnBtn.disabled = true;
+
+        const roll = Math.floor(Math.random() * 6) + 1;
+        diceDisplay.textContent = roll;
+        
+        const currentPosition = playerPositions[currentPlayer - 1];
+        const newPosition = Math.min(currentPosition + roll, currentGameBoardData.length - 1);
+        
+        await movePlayerAnimated(currentPlayer, currentPosition, newPosition);
+
+        if (newPosition >= currentGameBoardData.length - 1) {
+            handleWin();
+        } else {
+            handleSpaceAction(newPosition, currentPosition);
+        }
+    }
+
+    function movePlayerAnimated(playerNum, start, end) {
+        return new Promise(resolve => {
+            const playerPiece = document.getElementById(`player-piece-${playerNum}`);
+            if (!playerPiece) { resolve(); return; }
+
+            let current = start;
+            const interval = setInterval(() => {
+                current++;
+                if (current > end) {
+                    clearInterval(interval);
+                    playerPositions[playerNum - 1] = end;
+                    renderPlayerPieces();
+                    resolve();
+                    return;
+                }
+                const spaceEl = document.getElementById(`space-${current}`);
+                if (spaceEl) {
+                   spaceEl.querySelector('.piece-slot').appendChild(playerPiece);
+                   repositionPiecesInSlot(current - 1);
+                   repositionPiecesInSlot(current);
+                }
+            }, 200);
+        });
+    }
+
+    function handleWin() {
+        gameActive = false;
+        modalGraphic.textContent = '🏆';
+        modalTitle.textContent = `${gameConfig.players[currentPlayer - 1].name} Wins!`;
+        modalQuestion.textContent = 'Congratulations on completing your mission!';
+        modalImage.classList.add('hidden');
+        closeModalBtn.classList.remove('hidden');
+        correctBtn.classList.add('hidden');
+        incorrectBtn.classList.add('hidden');
+        modal.classList.remove('modal-hidden');
+        modal.classList.add('modal-visible');
+        rollDiceBtn.disabled = true;
+        nextTurnBtn.disabled = true;
+    }
+
+    async function handleSpaceAction(position, startPosition) {
+        const space = currentGameBoardData[position];
+        modalGraphic.textContent = space.graphic;
+        modalTitle.textContent = space.type.charAt(0).toUpperCase() + space.type.slice(1);
+        modalQuestion.textContent = space.text;
+        currentQuestionText = space.text;
+
+        if (space.imageUrl) {
+            modalImage.src = space.imageUrl;
+            modalImage.classList.remove('hidden');
+        } else {
+            modalImage.classList.add('hidden');
+        }
+        
+        modal.classList.remove('modal-hidden');
+        modal.classList.add('modal-visible');
+
+        if (space.type === 'question') {
+            modalQuestion.textContent = "Click to reveal the question...";
+            modalQuestion.className = "text-lg mb-6 bg-gray-100 text-gray-600 p-4 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors";
+            modalQuestion.dataset.revealed = 'false';
+            
+            speakText(currentQuestionText);
+            closeModalBtn.classList.add('hidden');
+            correctBtn.classList.remove('hidden');
+            incorrectBtn.classList.remove('hidden');
+
+            correctBtn.onclick = () => {
+                hideModal();
+                nextTurnBtn.disabled = false;
+            };
+
+            incorrectBtn.onclick = () => {
+                hideModal();
+                playerPositions[currentPlayer - 1] = startPosition;
+                renderPlayerPieces();
+                nextTurnBtn.disabled = false;
+            };
+        } else { 
+            modalQuestion.className = "text-lg mb-6"; // Reset class
+            modalQuestion.dataset.revealed = 'true';
+            closeModalBtn.classList.remove('hidden');
+            correctBtn.classList.add('hidden');
+            incorrectBtn.classList.add('hidden');
+            
+            closeModalBtn.onclick = () => {
+                hideModal();
+                nextTurnBtn.disabled = false;
+                if (space.action === 'move') {
+                    const currentPos = playerPositions[currentPlayer - 1];
+                    const newPos = Math.max(0, currentPos + (space.value || 0));
+                    setTimeout(() => { movePlayerAnimated(currentPlayer, currentPos, newPos); }, 200);
+                } else if (space.action === 'jump') {
+                    playerPositions[currentPlayer - 1] = space.value;
+                    renderPlayerPieces();
+                    setTimeout(() => handleSpaceAction(space.value, position), 200);
+                }
+            };
+        }
+    }
+    
+    function hideModal() {
+        modal.classList.add('modal-hidden');
+        modal.classList.remove('modal-visible');
+    }
+
+    function switchPlayer() {
+        if (!gameActive) return;
+        currentPlayer = (currentPlayer % gameConfig.playerCount) + 1;
+        updateTurnIndicator();
+        updateDraggablePieces();
+        updateGameControls();
+    }
+
+    function updateDraggablePieces() {
+        const isManual = manualModeCheckbox.checked;
+        document.querySelectorAll('.player-piece').forEach((piece) => {
+            piece.setAttribute('draggable', isManual);
+        });
+    }
+    
+    // --- EVENT LISTENERS & INITIALIZATION ---
+    playerCountSelect.addEventListener('change', () => {
+        gameConfig.playerCount = parseInt(playerCountSelect.value, 10);
+        renderPlayerEditor();
+        saveConfig();
+    });
+
+    startGameBtn.addEventListener('click', () => {
+        document.body.classList.add('game-active-body');
+        gameConfig.playerCount = parseInt(playerCountSelect.value, 10);
+        updateBoardDataFromUI();
+        saveConfig();
+        adminPage.classList.add('hidden');
+        gamePage.classList.remove('hidden');
+        initializeGame();
+    });
+
+    backToSetupBtn.addEventListener('click', () => {
+        document.body.classList.remove('game-active-body');
+        gamePage.classList.add('hidden');
+        adminPage.classList.remove('hidden');
+        renderAdminEditor();
+        renderPlayerEditor();
+    });
+
+    resetBoardBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to reset the board to its default state? All changes will be lost.')) {
+            gameConfig.boardData = JSON.parse(JSON.stringify(defaultGameData));
+            gameConfig.players = JSON.parse(JSON.stringify(defaultPlayers));
+            saveConfig();
+            renderAdminEditor();
+            renderPlayerEditor();
+        }
+    });
+
+    addSpaceBtn.addEventListener('click', () => {
+        gameConfig.boardData.push({ type: 'question', text: "New Question", graphic: '❓', imageUrl: '' });
+        renderAdminEditor();
+        saveConfig();
+    });
+
+    rollDiceBtn.addEventListener('click', handleRollDice);
+    nextTurnBtn.addEventListener('click', switchPlayer);
+
+    manualModeCheckbox.addEventListener('change', (e) => {
+        updateGameControls();
+        updateDraggablePieces();
+    });
+
+    modalQuestion.addEventListener('click', () => {
+        if (modalQuestion.dataset.revealed === 'false') {
+            modalQuestion.textContent = currentQuestionText;
+            modalQuestion.className = "text-lg mb-6"; // Reset to normal style
+            modalQuestion.dataset.revealed = 'true';
+        }
+    });
+
+    speakQuestionBtn.addEventListener('click', () => {
+        if (currentQuestionText) {
+            speakText(currentQuestionText);
+        }
+    });
+
+    howToBtnAdmin.addEventListener('click', () => howToModal.classList.remove('modal-hidden'));
+    howToBtnGame.addEventListener('click', () => howToModal.classList.remove('modal-hidden'));
+    closeHowToBtn.addEventListener('click', () => howToModal.classList.add('modal-hidden'));
+
+    window.addEventListener('resize', renderPlayerPieces);
+
+    board.addEventListener('dragstart', (e) => {
+        if (!e.target.classList.contains('player-piece') || e.target.getAttribute('draggable') !== 'true') {
+            e.preventDefault();
+            return;
+        }
+        e.dataTransfer.setData('text/plain', e.target.id);
+        setTimeout(() => e.target.classList.add('dragging'), 0);
+    });
+    
+    board.addEventListener('dragend', (e) => {
+        if (e.target.classList.contains('player-piece')) {
+            e.target.classList.remove('dragging');
+        }
+    });
+
+    board.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const targetSpace = e.target.closest('[id^="space-"]');
+        if (targetSpace && manualModeCheckbox.checked) {
+            targetSpace.classList.add('drag-over');
+        }
+    });
+
+    board.addEventListener('dragleave', (e) => {
+        const targetSpace = e.target.closest('[id^="space-"]');
+        if (targetSpace) {
+            targetSpace.classList.remove('drag-over');
+        }
+    });
+
+    board.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const targetSpace = e.target.closest('[id^="space-"]');
+        if (targetSpace) {
+            targetSpace.classList.remove('drag-over');
+            const pieceId = e.dataTransfer.getData('text/plain');
+            const piece = document.getElementById(pieceId);
+            
+            if (piece) {
+                const playerNum = parseInt(piece.dataset.playerNum, 10);
+                const oldSpaceIndex = playerPositions[playerNum - 1];
+                const newPosition = parseInt(targetSpace.id.split('-')[1], 10);
+                
+                playerPositions[playerNum - 1] = newPosition;
+                
+                const slot = targetSpace.querySelector('.piece-slot');
+                slot.appendChild(piece);
+
+                repositionPiecesInSlot(oldSpaceIndex);
+                repositionPiecesInSlot(newPosition);
+            }
+        }
+    });
+
+    // --- Initial Load ---
+    loadConfig();
+    renderAdminEditor();
+  </script>
+</body>
+</html>
+
+
+
+
+
